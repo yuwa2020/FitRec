@@ -6,8 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function HomeScreen() {
   const [isFirstTime, setIsFirstTime] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(true);
-  const [feature1, setFeature1] = useState(''); // State for user input 1
-  const [feature2, setFeature2] = useState(''); // State for user input 2
+  const [age, setAge] = useState(''); // State for user input 1
+  const [gender, setGender] = useState(''); // State for user input 2
+  const [height, setHeight] = useState(''); // State for user input 3
   const [predictionResult, setPredictionResult] = useState(null); // State to store model prediction
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function HomeScreen() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ feature1: feature1, feature2: feature2 }), // Send input data to API
+        body: JSON.stringify({ age: age, gender: gender, bmi: height }), // Change 'height' to 'bmi'
       });
       const result = await response.json();
       setPredictionResult(result); // Store the prediction result in state
@@ -49,15 +50,21 @@ export default function HomeScreen() {
       {/* Input fields for features */}
       <TextInput
         style={styles.input}
-        placeholder="Enter Feature 1"
-        value={feature1}
-        onChangeText={setFeature1}
+        placeholder="Enter age"
+        value={age}
+        onChangeText={setAge}
       />
       <TextInput
         style={styles.input}
-        placeholder="Enter Feature 2"
-        value={feature2}
-        onChangeText={setFeature2}
+        placeholder="Enter gender"
+        value={gender}
+        onChangeText={setGender}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Enter height"
+        value={height}
+        onChangeText={setHeight}
       />
 
       {/* Button to trigger prediction */}
