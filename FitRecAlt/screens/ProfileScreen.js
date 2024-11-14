@@ -1,13 +1,10 @@
-// ProfileScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Button, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import DropDownPicker from 'react-native-dropdown-picker';
-import Slider from '@react-native-community/slider';
-import * as ImagePicker from 'expo-image-picker';
-import { auth } from '../firebase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth, firestore } from '../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Slider from '@react-native-community/slider';
 
 export default function ProfileScreen({ navigation }) {
   const [userData, setUserData] = useState({
@@ -15,62 +12,30 @@ export default function ProfileScreen({ navigation }) {
     lastName: '',
     age: '',
     weight: '',
+    height: '',
     gender: '',
     activityLevel: 5,
     dailyStepCount: '',
     goalStepCount: '',
-    profilePhoto: null,
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [isGenderOpen, setIsGenderOpen] = useState(false);
 
+  // Load user data once on mount
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const savedData = await AsyncStorage.getItem('userData');
-        if (savedData) {
-          setUserData(JSON.parse(savedData));
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userRef = doc(firestore, 'users', currentUser.uid);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+          setUserData(docSnap.data());
+        } else {
+          console.log("No user data found, initializing profile data.");
         }
-      } catch (error) {
-        console.error("Failed to load user data:", error);
       }
     };
     loadData();
   }, []);
-
-  const pickImage = async () => {
-    if (!isEditing) return;
-
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      alert("Permission to access the gallery is required!");
-      return;
-    }
-
-    const pickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-    });
-
-    if (pickerResult && !pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
-      const selectedImageUri = pickerResult.assets[0].uri;
-      const updatedUserData = { ...userData, profilePhoto: selectedImageUri };
-      setUserData(updatedUserData);
-
-      try {
-        await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
-        console.log("Profile photo successfully updated and saved:", selectedImageUri);
-      } catch (error) {
-        console.error("Failed to save profile photo:", error);
-        Alert.alert("Error", "Could not save profile photo.");
-      }
-    } else {
-      Alert.alert("Image Selection Error", "No valid image was selected. Please try again.");
-      console.warn("Image selection failed, pickerResult:", pickerResult);
-    }
-  };
 
   const handleLogout = () => {
     auth.signOut()
@@ -87,31 +52,40 @@ export default function ProfileScreen({ navigation }) {
 
   const handleSave = async () => {
     setIsEditing(false);
-    try {
-      await AsyncStorage.setItem('userData', JSON.stringify(userData));
-      Alert.alert("Profile Updated", "Your changes have been saved.");
-    } catch (error) {
-      Alert.alert("Error", "Failed to save profile data.");
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const userRef = doc(firestore, 'users', currentUser.uid);
+      try {
+        // Save only supported fields to Firestore
+        const { firstName, lastName, age, weight, height, gender, activityLevel, dailyStepCount, goalStepCount } = userData;
+        await setDoc(userRef, { firstName, lastName, age, weight, height, gender, activityLevel, dailyStepCount, goalStepCount }, { merge: true });
+        Alert.alert("Profile Updated", "Your changes have been saved.");
+      } catch (error) {
+        console.error("Error saving profile data:", error);
+        Alert.alert("Error", "Failed to save profile data.");
+      }
     }
+  };
+
+  const genderOptions = ['Male', 'Female', 'Non-binary', 'Rather not say'];
+
+  const selectGender = (selectedGender) => {
+    setUserData((prevData) => ({
+      ...prevData,
+      gender: selectedGender.toLower(),
+    }));
   };
 
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-      {/* Edit Icon in Top Right */}
       <TouchableOpacity onPress={toggleEdit} style={styles.editIcon}>
         <FontAwesome name="pencil" size={24} color="black" />
       </TouchableOpacity>
 
-      {/* Profile Photo */}
-      <TouchableOpacity onPress={pickImage} disabled={!isEditing}>
-        <View style={styles.profilePhotoContainer}>
-          {userData.profilePhoto ? (
-            <Image source={{ uri: userData.profilePhoto }} style={styles.profilePhoto} />
-          ) : (
-            <FontAwesome name="user" size={50} color="#ccc" />
-          )}
-        </View>
-      </TouchableOpacity>
+      {/* Default Profile Icon */}
+      <View style={styles.profilePhotoContainer}>
+        <FontAwesome name="user" size={80} color="#ccc" />
+      </View>
 
       {/* Combined Display of First and Last Name */}
       <View style={styles.nameContainer}>
@@ -151,29 +125,37 @@ export default function ProfileScreen({ navigation }) {
           onChangeText={(text) => setUserData({ ...userData, weight: text })}
         />
 
-        <Text style={styles.label}>Gender</Text>
-        <DropDownPicker
-          open={isGenderOpen}
-          value={userData.gender}
-          items={[
-            { label: 'Male', value: 'male' },
-            { label: 'Female', value: 'female' },
-            { label: 'Non-binary', value: 'non-binary' },
-            { label: 'Rather not say', value: 'rather-not-say' }
-          ]}
-          setOpen={setIsGenderOpen}
-          setValue={(value) => setUserData({ ...userData, gender: value })}
-          disabled={!isEditing}
-          placeholder="Select Gender"
-          containerStyle={styles.dropdownContainer}
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownStyle}
+        <Text style={styles.label}>Height (inches)</Text>
+        <TextInput
+          style={styles.input}
+          value={userData.height}
+          editable={isEditing}
+          keyboardType="numeric"
+          onChangeText={(text) => setUserData({ ...userData, height: text })}
         />
 
-        <View style={styles.activityLevelContainer}>
-          <Text style={styles.label}>Activity Level</Text>
-          <Text style={styles.activityLevelValue}>{userData.activityLevel}</Text>
+        {/* Gender Selection as Checkboxes */}
+        <Text style={styles.label}>Gender</Text>
+        <View style={styles.genderContainer}>
+          {genderOptions.map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={styles.genderOption}
+              onPress={() => selectGender(option)}
+              disabled={!isEditing}
+            >
+              <FontAwesome
+                name={userData.gender === option ? 'check-square' : 'square-o'}
+                size={24}
+                color={userData.gender === option ? '#000' : '#ccc'}
+              />
+              <Text style={styles.genderLabel}>{option}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
+
+        {/* Activity Level */}
+        <Text style={styles.label}>Activity Level: {userData.activityLevel}</Text>
         <Slider
           style={styles.slider}
           minimumValue={1}
@@ -233,11 +215,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 10,
   },
-  profilePhoto: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 50,
-  },
   nameContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -268,30 +245,24 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     fontSize: 16,
   },
-  activityLevelContainer: {
+  genderContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 10,
+    flexWrap: 'wrap',
+    marginTop: 10,
   },
-  activityLevelValue: {
+  genderOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 20,
+    marginBottom: 10,
+  },
+  genderLabel: {
+    marginLeft: 8,
     fontSize: 16,
-    fontWeight: 'bold',
   },
   slider: {
     width: '100%',
     height: 40,
-  },
-  dropdownContainer: {
-    marginVertical: 10,
-    width: '100%',
-  },
-  dropdown: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  dropdownStyle: {
-    maxHeight: 120,
   },
   logoutButtonContainer: {
     marginTop: 30,
