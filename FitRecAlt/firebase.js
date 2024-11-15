@@ -21,10 +21,15 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize Firestore
 const firestore = getFirestore(app);
 
-// Initialize Firebase Auth with persistence using AsyncStorage (only if not already initialized)
-const auth = getAuth(app) || initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage)
-});
+// Initialize Firebase Auth with persistence using AsyncStorage
+let auth;
+if (!getApps().length) {
+    auth = initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage)
+    });
+} else {
+    auth = getAuth(app);
+}
 
 export { auth, firestore };
 export default app;

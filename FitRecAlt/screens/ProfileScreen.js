@@ -72,7 +72,7 @@ export default function ProfileScreen({ navigation }) {
   const selectGender = (selectedGender) => {
     setUserData((prevData) => ({
       ...prevData,
-      gender: selectedGender.toLower(),
+      gender: selectedGender,
     }));
   };
 
