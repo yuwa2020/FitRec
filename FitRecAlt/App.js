@@ -6,7 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import SignInScreen from './screens/SignInScreen';
 import HomeScreen from './screens/HomeScreen';
 import SignUpScreen from './screens/SignUpScreen';
-import RecommendationsScreen from './screens/ReconmmendationsScreen';
+import RecommendationsScreen from './screens/RecommendationsScreen';
 import ProfileScreen from './screens/ProfileScreen';
 
 const Stack = createStackNavigator();

@@ -1,48 +1,55 @@
-// UserInfoModal.js
 import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import Slider from '@react-native-community/slider';
 import DropDownPicker from 'react-native-dropdown-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth, firestore } from '../firebase';  // Import auth and firestore
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function UserInfoModal({ visible, onClose }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [age, setAge] = useState('');
   const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState('');
   const [gender, setGender] = useState(null);
   const [activityLevel, setActivityLevel] = useState(5);
   const [dailyStepCount, setDailyStepCount] = useState('');
   const [goalStepCount, setGoalStepCount] = useState('');
-
   const [isGenderOpen, setIsGenderOpen] = useState(false);
 
-  // Function to handle numeric-only input
   const handleNumericInput = (input, setter) => {
     if (/^\d*$/.test(input)) {
       setter(input);
     }
   };
 
-  // Save data and close modal
   const handleSave = async () => {
-    const dataToSave = {
-      firstName,
-      lastName,
-      age,
-      weight,
-      gender,
-      activityLevel,
-      dailyStepCount,
-      goalStepCount,
-    };
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const userData = {
+        firstName,
+        lastName,
+        age,
+        weight,
+        height,
+        gender,
+        activityLevel,
+        dailyStepCount,
+        goalStepCount,
+      };
 
-    try {
-      await AsyncStorage.setItem('userData', JSON.stringify(dataToSave));
-      onClose(); // Close the modal after saving
-    } catch (error) {
-      console.error("Failed to save user data:", error);
-      return; // return within function scope if needed for error handling
+      try {
+        // Save user data to Firestore under the user's `uid`
+        const userRef = doc(firestore, 'users', currentUser.uid);
+        await setDoc(userRef, userData, { merge: true });
+        Alert.alert("Profile Updated", "Your data has been saved.");
+        onClose(); // Close the modal after saving
+      } catch (error) {
+        console.error("Failed to save user data:", error);
+        Alert.alert("Error", "Could not save your data.");
+      }
+    } else {
+      Alert.alert("Error", "No user is currently signed in.");
     }
   };
 
@@ -72,7 +79,6 @@ export default function UserInfoModal({ visible, onClose }) {
             onChangeText={(value) => handleNumericInput(value, setAge)}
           />
 
-          {/* Weight Input with "lbs" label */}
           <View style={styles.weightContainer}>
             <TextInput
               style={[styles.input, styles.weightInput]}
@@ -81,10 +87,20 @@ export default function UserInfoModal({ visible, onClose }) {
               value={weight}
               onChangeText={(value) => handleNumericInput(value, setWeight)}
             />
-            <Text style={styles.weightLabel}>lbs</Text>
+            <Text style={styles.unitLabel}>lbs</Text>
           </View>
 
-          {/* Gender Dropdown Menu */}
+          <View style={styles.weightContainer}>
+            <TextInput
+              style={[styles.input, styles.weightInput]}
+              placeholder="Height"
+              keyboardType="numeric"
+              value={height}
+              onChangeText={(value) => handleNumericInput(value, setHeight)}
+            />
+            <Text style={styles.unitLabel}> inches </Text>
+          </View>
+
           <DropDownPicker
             open={isGenderOpen}
             value={gender}
@@ -167,7 +183,7 @@ const styles = StyleSheet.create({
   weightInput: {
     flex: 1,
   },
-  weightLabel: {
+  unitLabel: {
     marginLeft: 10,
     fontSize: 16,
   },
