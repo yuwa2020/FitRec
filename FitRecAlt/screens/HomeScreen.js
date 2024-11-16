@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Button } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Button, Dimensions } from 'react-native';
 import UserInfoModal from '../components/UserInfoModal';
 import { auth, firestore } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { LineChart } from 'react-native-chart-kit';
+import intensityData from '../intensity_data.json'; // Adjust the path as needed
 
 export default function HomeScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -19,6 +21,7 @@ export default function HomeScreen() {
   const [gender, setGender] = useState('');
   const [height, setHeight] = useState('');
   const [predictionResult, setPredictionResult] = useState(null);
+  const [data, setData] = useState([]);
 
   // Check if the modal needs to be shown on first login
   useEffect(() => {
@@ -39,7 +42,19 @@ export default function HomeScreen() {
         }
       }
     };
+    // Load CSV data
+    const loadData = () => {
+      const filteredData = intensityData
+        .filter((row) => parseInt(row.subj_id, 10) === 25)
+        .map((row) => ({
+          minute: parseInt(row.minute, 10),
+          VM: parseFloat(row.VM),
+        }));
+      setData(filteredData);
+    };
+
     checkFirstLogin();
+    loadData();
   }, []);
 
   // Close the modal and mark as shown for this user
@@ -72,22 +87,15 @@ export default function HomeScreen() {
     return goalStepCount > 0 ? ((dailyStepCount / goalStepCount) * 100).toFixed(1) : 0;
   };
 
-  // Prediction Function
-  const getPrediction = async () => {
-    try {
-      const response = await fetch('http://127.0.0.1:5000/predict', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ age: age, gender: gender, bmi: height }),
-      });
-      const result = await response.json();
-      setPredictionResult(result);
-    } catch (error) {
-      console.error('Error fetching prediction:', error);
-    }
+  const chartData = {
+    labels: data.map((d) => d.minute.toString()),
+    datasets: [
+      {
+        data: data.map((d) => d.VM),
+      },
+    ],
   };
+
 
   return (
     <ScrollView style={styles.container}>
@@ -138,36 +146,41 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Prediction Card */}
+      {/* Graph Card */}
       <View style={styles.card}>
-        <View style={styles.cardContent}>
-          <View style={styles.predictionContent}>
-            <Text style={styles.metricLabel}>Step Prediction</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter age"
-              value={age}
-              onChangeText={setAge}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter gender"
-              value={gender}
-              onChangeText={setGender}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter height"
-              value={height}
-              onChangeText={setHeight}
-            />
-            <Button title="Get Prediction" onPress={getPrediction} />
-            {predictionResult && (
-              <Text style={styles.metricSubLabel}>Prediction: {JSON.stringify(predictionResult)}</Text>
-            )}
-          </View>
-        </View>
+        {data.length > 0 ? (
+          <LineChart
+            data={chartData}
+            width={Dimensions.get('window').width - 40} // from react-native
+            height={220}
+            yAxisLabel=""
+            yAxisSuffix=""
+            chartConfig={{
+              backgroundColor: '#ffffff',
+              backgroundGradientFrom: '#ffffff',
+              backgroundGradientTo: '#ffffff',
+              decimalPlaces: 2, // optional, defaults to 2dp
+              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`, // Black text
+              labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`, // Black labels
+              style: {
+                borderRadius: 16,
+              },
+              propsForDots: {
+                r: '6',
+                strokeWidth: '2',
+                stroke: '#0000ff', // Blue dots
+              },
+            }}
+            style={{
+              marginVertical: 8,
+              borderRadius: 16,
+            }}
+          />
+        ) : (
+          <Text>Loading data...</Text>
+        )}
       </View>
+      
     </ScrollView>
   );
 }
