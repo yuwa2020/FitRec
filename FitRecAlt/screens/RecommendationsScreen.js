@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
-import { doc, getDoc, collection, addDoc, getDocs } from 'firebase/firestore';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Dimensions } from 'react-native';
+import { doc, getDoc, collection, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { auth, firestore } from '../firebase';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 
@@ -243,6 +243,9 @@ export default function RecommendationsScreen() {
   const [currentRecommendation, setCurrentRecommendation] = useState('');
   const [oldRecommendations, setOldRecommendations] = useState([]);
 
+  //screenheight
+  const screenHeight = Dimensions.get('window').height;
+
   useEffect(() => {
     const fetchUserData = async () => {
       const currentUser = auth.currentUser;
@@ -329,6 +332,31 @@ export default function RecommendationsScreen() {
     }
   };
 
+
+    //clear old recs
+    const clearRecommendations = async () => {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+    
+      const recommendationsRef = collection(firestore, 'users', currentUser.uid, 'recommendations');
+      try {
+        for (const rec of oldRecommendations) {
+          if (!rec.id) {
+            console.warn("Skipping invalid recommendation:", rec);
+            continue; // Skip if ID is missing
+          }
+          const docRef = doc(recommendationsRef, rec.id);
+          await deleteDoc(docRef);
+        }
+        setOldRecommendations([]);
+        Alert.alert("Success", "All past recommendations have been cleared.");
+      } catch (error) {
+        console.error("Error clearing recommendations:", error);
+        Alert.alert("Error", "Could not clear past recommendations.");
+      }
+    };
+    
+
   return (
     <View style={styles.container}>
     {/* Pinned Recommendation Card */}
@@ -350,7 +378,7 @@ export default function RecommendationsScreen() {
 
     {/* Scrollable Old Recommendations */}
     {/* Past Recommendations Card */}
-    <View style={styles.card}>
+    <View style={[styles.card, {height: screenHeight *0.5}]}>
         <Text style={styles.additionalRecommendationsLabel}>Past Recommendations</Text>
         <ScrollView style={styles.scrollableContent}>
           {oldRecommendations.length > 0 ? (
@@ -363,6 +391,12 @@ export default function RecommendationsScreen() {
           ) : (
             <Text style={styles.recommendationItem}>No past recommendations yet.</Text>
           )}
+
+          {/*clear button here*/}
+          <TouchableOpacity style={styles.clearButton} onPress={clearRecommendations}>
+            <Text style={styles.clearButtonText}>Clear Past Recommendations</Text>
+          </TouchableOpacity>
+
         </ScrollView>
       </View>
 
@@ -460,6 +494,20 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff', // White text
     fontSize: 12,
+    fontWeight: 'bold',
+  },
+
+  clearButton: {
+    backgroundColor: '#ff4d4d',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 10,
+    alignSelf: 'center',
+  },
+  clearButtonText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });

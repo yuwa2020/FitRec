@@ -9,6 +9,7 @@ import RecommendationsScreen from './screens/RecommendationsScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import { auth, firestore } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { FontAwesome6 } from '@expo/vector-icons';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -87,6 +88,26 @@ function App() {
             }
           },
         }}
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ color, size }) => {
+            let iconName;
+            if (route.name === 'Home') {
+              iconName = "Home"; 
+            } else if (route.name === 'Recommendations') {
+              iconName = 'list-alt'; 
+            } else if (route.name === 'Profile') {
+              iconName = 'user';
+            }
+            return <FontAwesome6 name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: '#00316E', 
+          tabBarInactiveTintColor: 'gray', 
+          tabBarStyle: {
+            backgroundColor: '#f9f9f9', 
+            borderTopWidth: 0.5, 
+            borderTopColor: '#ccc',
+          },
+        })}
       >
         <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
         <Tab.Screen name="Recommendations" component={RecommendationsScreen} options={{ title: 'Recommendations' }} />
