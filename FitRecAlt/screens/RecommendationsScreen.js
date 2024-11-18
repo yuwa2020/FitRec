@@ -377,8 +377,7 @@ export default function RecommendationsScreen() {
     </View>
 
     {/* Scrollable Old Recommendations */}
-    {/* Past Recommendations Card */}
-    <View style={[styles.card, {height: screenHeight *0.5}]}>
+    <View style={[styles.card, {height: screenHeight *0.445}]}>
         <Text style={styles.additionalRecommendationsLabel}>Past Recommendations</Text>
         <ScrollView style={styles.scrollableContent}>
           {oldRecommendations.length > 0 ? (
