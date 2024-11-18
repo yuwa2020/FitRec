@@ -148,6 +148,7 @@ export default function HomeScreen() {
 
       {/* Graph Card */}
       <View style={styles.card}>
+      <Text style={styles.metricLabel}>Intensity Plot </Text>
         {data.length > 0 ? (
           <LineChart
             data={chartData}

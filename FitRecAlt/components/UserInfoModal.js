@@ -26,6 +26,13 @@ export default function UserInfoModal({ visible, onClose }) {
   const handleSave = async () => {
     const currentUser = auth.currentUser;
     if (currentUser) {
+      let bmi = null;
+      if (weight && height){
+        const heightInInches = parseFloat(height)
+        const weightInLbs = parseFloat(weight)
+        bmi = (weightInLbs/(heightInInches*heightInInches))*703;
+        bmi = parseFloat(bmi.toFixed(1));
+      }
       const userData = {
         firstName,
         lastName,
@@ -36,6 +43,7 @@ export default function UserInfoModal({ visible, onClose }) {
         activityLevel,
         dailyStepCount,
         goalStepCount,
+        bmi,
       };
 
       try {
