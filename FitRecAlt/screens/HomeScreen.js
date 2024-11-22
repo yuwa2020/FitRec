@@ -101,15 +101,16 @@ export default function HomeScreen() {
     <ScrollView style={styles.container}>
       <UserInfoModal visible={isModalVisible} onClose={handleModalClose} />
 
-      {/* Daily Steps Card */}
+      {/* Daily Steps Card  userData.dailyStepCount, calculateStepPercentage()*/}
       <View style={styles.card}>
         <View style={styles.cardContent}>
           <FontAwesome6 name="person-walking" size={40} color="#333" style={styles.icon} />
           <View>
             <Text style={styles.metricLabel}>Daily Steps</Text>
-            <Text style={styles.metricValue}>{userData.dailyStepCount}</Text>
+            <Text style={styles.metricValue}>{800}</Text>
             <Text style={styles.metricSubLabel}>
-              {calculateStepPercentage()}% of Goal ({userData.goalStepCount} steps)
+
+              {8}% of Goal ({userData.goalStepCount} steps)
             </Text>
           </View>
         </View>
@@ -121,11 +122,13 @@ export default function HomeScreen() {
           <FontAwesome6 name="stairs" size={40} color="#333" style={styles.icon} />
           <View>
             <Text style={styles.metricLabel}>Flights of Stairs</Text>
-            <Text style={styles.metricValue}>{userData.flightsOfStairs}</Text>
+            <Text style={styles.metricValue}>{7}</Text>
+            {/* <Text style={styles.metricValue}>{userData.flightsOfStairs}</Text> */}
             <Text style={styles.metricSubLabel}>Climbed Today</Text>
             <Text style={styles.metricSubLabel}>
               {/*Put weekly steps here*/}
-              Weekly Total: {userData.weeklyFlightsOfStairs} Flights
+              {/* Weekly Total: {userData.weeklyFlightsOfStairs} Flights */}
+              Weekly Total: {27} Flights
             </Text>
           </View>
         </View>
@@ -137,10 +140,12 @@ export default function HomeScreen() {
           <FontAwesome6 name="clock" size={40} color="#333" style={styles.icon} />
           <View>
             <Text style={styles.metricLabel}>Active Minutes</Text>
-            <Text style={styles.metricValue}>{userData.activeMinutes}</Text>
+            <Text style={styles.metricValue}>{23}</Text>
+            {/* <Text style={styles.metricValue}>{userData.activeMinutes}</Text> */}
             <Text style={styles.metricSubLabel}>Today</Text>
             <Text style={styles.metricSubLabel}>
-              Weekly Total: {userData.weeklyActiveMinutes} Minutes
+              Weekly Total: {129} Minutes
+              {/* Weekly Total: {userData.weeklyActiveMinutes} Minutes */}
             </Text>
           </View>
         </View>
